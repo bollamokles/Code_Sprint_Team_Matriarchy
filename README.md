@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CareerPilot
 
-## Getting Started
+Agentic career co-pilot for hackathons — RAG over your CV, AI assistant, job search with fit scores, and progress tracking.
 
-First, run the development server:
+## Features
+
+| Pillar | Route | Description |
+|--------|-------|-------------|
+| **CV Upload & RAG** | `/upload` | PDF/DOCX → section chunks → Ollama embeddings → Supabase pgvector |
+| **AI Assistant** | `/assistant` | Chat grounded in your CV via semantic search |
+| **Job Hunter** | `/jobs` | Natural language search (Adzuna) + AI fit scores |
+| **Progress Tracker** | `/tracker` | Kanban, to-dos, goals, calendar |
+
+## Prerequisites
+
+1. **Ollama** running locally:
+   ```bash
+   ollama pull qwen3.5:4b
+   ollama pull nomic-embed-text
+   ```
+
+2. **Supabase** project — run `supabase/schema.sql` in the SQL Editor.
+
+3. **Adzuna API** keys from [developer.adzuna.com](https://developer.adzuna.com/).
+
+## Setup
 
 ```bash
+cp .env.example .env.local
+# Fill in Supabase + Adzuna keys
+
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See `.env.example` for all variables. Key ones:
 
-## Learn More
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `OLLAMA_BASE_URL` (default `http://localhost:11434`)
+- `OLLAMA_CHAT_MODEL` (default `qwen3.5:4b`)
+- `OLLAMA_EMBED_MODEL` (default `nomic-embed-text`, 768 dimensions)
+- `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`
 
-To learn more about Next.js, take a look at the following resources:
+## Architecture
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+CV (PDF/DOCX) → parse → chunk by section → embed (Ollama) → cv_chunks (pgvector)
+                                                              ↓
+User question → embed → match_cv_chunks RPC → context → Ollama chat
+Job query     → Adzuna API → score vs CV context → fit-scored cards
+Tracker       → tracker_items table (kanban / todo / goal / event)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech stack
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js App Router, Tailwind, shadcn/ui
+- Supabase (Postgres + pgvector)
+- Ollama (local LLM + embeddings)
+- Adzuna (job listings)
