@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuthUserId } from '@/lib/require-auth'
 import { supabaseAdmin } from '@/lib/supabase'
 
 const VALID_TYPES = ['kanban', 'todo', 'goal', 'event'] as const
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get('userId')
-  const itemType = req.nextUrl.searchParams.get('type')
+  const auth = await requireAuthUserId()
+  if ('response' in auth) return auth.response
+  const { userId } = auth
 
-  if (!userId) {
-    return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
-  }
+  const itemType = req.nextUrl.searchParams.get('type')
 
   let query = supabaseAdmin
     .from('tracker_items')
@@ -23,17 +23,27 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    const msg = error.message ?? ''
+    const tableMissing =
+      /could not find the table/i.test(msg) || /relation .* does not exist/i.test(msg)
+    if (tableMissing) return NextResponse.json({ items: [] })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
   return NextResponse.json({ items: data ?? [] })
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuthUserId()
+  if ('response' in auth) return auth.response
+  const { userId } = auth
+
   try {
     const body = await req.json()
-    const { userId, item_type, title, description, status, column_key, due_date, start_at, end_at, progress, position } =
+    const { item_type, title, description, status, column_key, due_date, start_at, end_at, progress, position } =
       body
 
-    if (!userId || !item_type || !title) {
+    if (!item_type || !title) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -67,10 +77,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAuthUserId()
+  if ('response' in auth) return auth.response
+  const { userId } = auth
+
   try {
-    const { id, userId, ...updates } = await req.json()
-    if (!id || !userId) {
-      return NextResponse.json({ error: 'Missing id or userId' }, { status: 400 })
+    const { id, ...updates } = await req.json()
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id' }, { status: 400 })
     }
 
     const allowed = [
@@ -105,11 +119,14 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const id = req.nextUrl.searchParams.get('id')
-  const userId = req.nextUrl.searchParams.get('userId')
+  const auth = await requireAuthUserId()
+  if ('response' in auth) return auth.response
+  const { userId } = auth
 
-  if (!id || !userId) {
-    return NextResponse.json({ error: 'Missing id or userId' }, { status: 400 })
+  const id = req.nextUrl.searchParams.get('id')
+
+  if (!id) {
+    return NextResponse.json({ error: 'Missing id' }, { status: 400 })
   }
 
   const { error } = await supabaseAdmin

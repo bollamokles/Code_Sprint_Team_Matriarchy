@@ -1,86 +1,172 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Briefcase, FileUp, MessageSquare, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { 
+  Compass, 
+  ArrowRight, 
+  Sparkles,
+  MessageSquare,
+  Kanban,
+  Upload,
+  Search
+} from 'lucide-react'
 
-const pillars = [
-  {
-    title: 'CV Upload & RAG',
-    description: 'Upload PDF/DOCX, chunk by section, embed with Ollama, store in Supabase pgvector.',
-    href: '/upload',
-    icon: FileUp,
-  },
-  {
-    title: 'AI Assistant',
-    description: 'Chat grounded in your CV — interview prep, cover letters, career advice.',
-    href: '/assistant',
-    icon: MessageSquare,
-  },
-  {
-    title: 'Job Hunter',
-    description: 'Natural language job search via Adzuna with AI fit scores from your CV.',
-    href: '/jobs',
-    icon: Briefcase,
-  },
-  {
-    title: 'Progress Tracker',
-    description: 'Kanban pipeline, to-dos, goals, and calendar for your job search.',
-    href: '/tracker',
-    icon: Target,
-  },
-]
+export default async function Home() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-export default function HomePage() {
+  if (user) {
+    redirect('/dashboard')
+  }
+
+  const features = [
+    {
+      icon: Search,
+      title: 'Smart Job Search',
+      description: 'Discover opportunities that match your skills and career goals with intelligent job matching.',
+    },
+    {
+      icon: Kanban,
+      title: 'Visual Tracking',
+      description: 'Manage applications with a beautiful Kanban board and calendar view for interviews.',
+    },
+    {
+      icon: MessageSquare,
+      title: 'AI Career Advisor',
+      description: 'Get personalized advice on resumes, interviews, and career development.',
+    },
+    {
+      icon: Upload,
+      title: 'Resume Optimization',
+      description: 'Upload your CV and get AI-powered feedback to make it stand out.',
+    },
+  ]
+
   return (
-    <div className="flex flex-1 flex-col gap-8 p-8">
-      <div className="max-w-2xl">
-        <h1 className="text-3xl font-bold tracking-tight">CareerPilot</h1>
-        <p className="mt-2 text-muted-foreground">
-          Your agentic career co-pilot. Start by uploading your CV, then explore jobs, chat with
-          your AI assistant, and track your progress — all grounded in your experience.
-        </p>
-        <div className="mt-6 flex gap-3">
-          <Button asChild>
-            <Link href="/upload">Upload CV</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/assistant">Open Assistant</Link>
-          </Button>
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-accent rounded-full blur-3xl" />
+        </div>
+
+        {/* Nav */}
+        <nav className="relative z-10 flex items-center justify-between p-6 lg:px-12">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary shadow-lg shadow-primary/25">
+              <Compass className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">CareerPilot</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+            <Button asChild className="shadow-lg shadow-primary/25">
+              <Link href="/register">Get Started</Link>
+            </Button>
+          </div>
+        </nav>
+
+        {/* Hero Content */}
+        <div className="relative z-10 px-6 lg:px-12 py-20 lg:py-32">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+              <Sparkles className="w-4 h-4" />
+              AI-Powered Career Management
+            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-balance">
+              Navigate your career journey with{' '}
+              <span className="text-primary">confidence</span>
+            </h1>
+            <p className="mt-6 text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
+              CareerPilot is your AI-powered co-pilot for job hunting, application tracking, 
+              and career development. Land your dream job faster.
+            </p>
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" className="h-12 px-8 shadow-lg shadow-primary/25" asChild>
+                <Link href="/register">
+                  Start Free
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-12 px-8" asChild>
+                <Link href="/login">
+                  I have an account
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {pillars.map(({ title, description, href, icon: Icon }) => (
-          <Link key={href} href={href} className="group">
-            <Card className="h-full transition-shadow group-hover:shadow-md">
-              <CardHeader>
-                <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-primary/10">
-                  <Icon className="size-5 text-primary" />
+      {/* Features Section */}
+      <div className="px-6 lg:px-12 py-20 lg:py-32 bg-muted/50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight">
+              Everything you need to succeed
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+              Powerful tools designed to streamline your job search and accelerate your career growth.
+            </p>
+          </div>
+          
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature, index) => {
+              const Icon = feature.icon
+              return (
+                <div 
+                  key={index} 
+                  className="p-6 rounded-2xl bg-card border hover:border-primary/50 hover:shadow-lg transition-all"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </div>
-                <CardTitle>{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <span className="text-sm font-medium text-primary">Open →</span>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+              )
+            })}
+          </div>
+        </div>
       </div>
 
-      <Card className="max-w-2xl border-dashed">
-        <CardHeader>
-          <CardTitle className="text-base">Quick start</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          <ol className="list-decimal space-y-1 pl-4">
-            <li>Run Ollama with <code className="rounded bg-muted px-1">qwen3.5:4b</code> and <code className="rounded bg-muted px-1">nomic-embed-text</code></li>
-            <li>Apply <code className="rounded bg-muted px-1">supabase/schema.sql</code> in your Supabase project</li>
-            <li>Set env vars (see <code className="rounded bg-muted px-1">.env.example</code>)</li>
-            <li>Upload your CV, then try job search and chat</li>
-          </ol>
-        </CardContent>
-      </Card>
+      {/* CTA Section */}
+      <div className="px-6 lg:px-12 py-20 lg:py-32">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="p-8 lg:p-12 rounded-3xl bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10 border border-primary/20">
+            <h2 className="text-2xl lg:text-3xl font-bold tracking-tight mb-4">
+              Ready to accelerate your career?
+            </h2>
+            <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+              Join thousands of job seekers who have transformed their job search with CareerPilot.
+            </p>
+            <Button size="lg" className="h-12 px-8 shadow-lg shadow-primary/25" asChild>
+              <Link href="/register">
+                Get Started for Free
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="px-6 lg:px-12 py-8 border-t">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Compass className="w-5 h-5 text-primary" />
+            <span className="font-semibold">CareerPilot</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Built with AI. Designed for success.
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }

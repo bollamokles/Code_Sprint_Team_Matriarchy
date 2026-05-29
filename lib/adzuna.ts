@@ -8,6 +8,7 @@ export type AdzunaJob = {
   salary_min?: number
   salary_max?: number
   created?: string
+  application_deadline?: string | null
 }
 
 export async function searchAdzunaJobs(
@@ -52,5 +53,15 @@ export async function searchAdzunaJobs(
     salary_min: job.salary_min as number | undefined,
     salary_max: job.salary_max as number | undefined,
     created: job.created as string | undefined,
+    // Adzuna doesn't reliably provide an "apply by" date in this response.
+    // For demo purposes, derive an estimated deadline from the listing created date.
+    application_deadline: (() => {
+      const createdRaw = job.created as string | undefined
+      if (!createdRaw) return null
+      const createdDate = new Date(createdRaw)
+      if (!Number.isFinite(createdDate.getTime())) return null
+      createdDate.setDate(createdDate.getDate() + 30)
+      return createdDate.toISOString().slice(0, 10)
+    })(),
   }))
 }

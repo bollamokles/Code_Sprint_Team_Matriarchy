@@ -90,3 +90,44 @@ create table if not exists tracker_items (
 );
 
 create index if not exists tracker_items_user_type_idx on tracker_items (user_id, item_type);
+
+-- Calendar + day to-dos
+create table if not exists todos (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  text text not null,
+  due_date date,
+  done boolean default false,
+  created_at timestamptz default now()
+);
+
+create index if not exists todos_user_id_idx on todos (user_id, due_date);
+
+-- Weekly goals
+create table if not exists goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  text text not null,
+  target int not null,
+  created_at timestamptz default now()
+);
+
+create index if not exists goals_user_id_idx on goals (user_id, created_at);
+
+-- Application tracker (Kanban)
+create table if not exists applications (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  job_title text not null,
+  company text not null,
+  status text not null check (status in ('Applied', 'Interviewing', 'Offer', 'Rejected')),
+  applied_date date not null,
+  notes text,
+  job_url text,
+  salary numeric,
+  location text,
+  created_at timestamptz default now()
+);
+
+create index if not exists applications_user_id_idx on applications (user_id, applied_date);
+create index if not exists applications_user_status_idx on applications (user_id, status);

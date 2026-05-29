@@ -14,8 +14,9 @@ const MAX_CHUNK_CHARS = 1200
 
 export type CVChunk = { content: string; section: string }
 
-function normalizeText(text: string): string {
-  return text
+function normalizeText(text: unknown): string {
+  const s = typeof text === 'string' ? text : String(text)
+  return s
     .replace(/\r\n/g, '\n')
     .replace(/\t/g, ' ')
     .replace(/[ \u00a0]+/g, ' ')

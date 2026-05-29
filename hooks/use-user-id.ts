@@ -1,25 +1,31 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DEMO_USER_ID } from '@/lib/user'
-
-const STORAGE_KEY = 'careerpilot_user_id'
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 export function useUserId() {
-  const [userId, setUserId] = useState(DEMO_USER_ID)
-  const [ready, setReady] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) setUserId(stored)
-    else localStorage.setItem(STORAGE_KEY, DEMO_USER_ID)
-    setReady(true)
+    const supabase = createClient()
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null)
+      setLoading(false)
+    })
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
-  function updateUserId(id: string) {
-    localStorage.setItem(STORAGE_KEY, id)
-    setUserId(id)
+  return {
+    userId: user?.id ?? '',
+    email: user?.email ?? null,
+    ready: !loading && !!user,
   }
-
-  return { userId, ready, setUserId: updateUserId }
 }
