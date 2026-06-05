@@ -1,7 +1,13 @@
+import { PageTransition } from '@/components/page-transition'
+
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return <>{children}</>
+  return (
+    <PageTransition>
+      {children}
+    </PageTransition>
+  )
 }

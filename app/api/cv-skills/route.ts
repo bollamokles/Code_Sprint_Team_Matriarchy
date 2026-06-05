@@ -22,6 +22,6 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ skills: (data ?? []).map((d) => String(d.content ?? '')) })
+  return NextResponse.json({ skills: (data ?? []).map((d: any) => String(d.content ?? '')) })
 }
 
