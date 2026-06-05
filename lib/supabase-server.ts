@@ -25,31 +25,50 @@ export async function createSupabaseServerClient() {
     }
   )
 
-  const demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
-  const hasDemoCookie = cookieStore.get('demo_user_id')?.value === demoUserId
+  const demoUserId = cookieStore.get('demo_user_id')?.value
 
-  const mockUser = {
-    id: demoUserId,
-    email: 'rafi_vai@gmail.com',
-    user_metadata: {
-      full_name: 'Rafi (Judge)',
-      skills: [],
-    },
-    aud: 'authenticated',
-    role: 'authenticated',
+  // Helper to resolve mock user from cookie
+  const getMockUser = () => {
+    if (!demoUserId) return null
+    
+    let fullName = 'Rafi (Judge)'
+    let email = 'rafi_vai@gmail.com'
+    if (demoUserId === 'sarah_chen_demo') {
+      fullName = 'Sarah Chen'
+      email = 'sarah.chen@demo.com'
+    } else if (demoUserId === 'marcus_johnson_demo') {
+      fullName = 'Marcus Johnson'
+      email = 'marcus.j@demo.com'
+    } else if (demoUserId === 'emily_rodriguez_demo') {
+      fullName = 'Emily Rodriguez'
+      email = 'emily.r@demo.com'
+    }
+
+    return {
+      id: demoUserId,
+      email,
+      user_metadata: {
+        full_name: fullName,
+        skills: [],
+      },
+      aud: 'authenticated',
+      role: 'authenticated',
+    }
   }
+
+  const mockUser = getMockUser()
 
   // Override auth methods
   const authOverride = {
     ...client.auth,
     getUser: async () => {
-      if (hasDemoCookie) {
+      if (mockUser) {
         return { data: { user: mockUser }, error: null }
       }
       return client.auth.getUser()
     },
     getSession: async () => {
-      if (hasDemoCookie) {
+      if (mockUser) {
         return {
           data: {
             session: {

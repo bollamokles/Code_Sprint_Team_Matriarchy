@@ -6,36 +6,52 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   )
 
-  const demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
+  // Helper to get active demo user details
+  const getMockUser = () => {
+    if (typeof window === 'undefined') return null
+    const id = localStorage.getItem('demo_user_id') || document.cookie.split('; ').find(row => row.trim().startsWith('demo_user_id='))?.split('=')[1]
+    if (!id) return null
 
-  // Helper to determine if demo session is active
-  const isDemoActive = () => {
-    if (typeof window === 'undefined') return false
-    return !!localStorage.getItem('demo_user_id') || document.cookie.includes('demo_user_id=')
-  }
+    const defaultDemoId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
+    
+    let fullName = 'Rafi (Judge)'
+    let email = 'rafi_vai@gmail.com'
+    if (id === 'sarah_chen_demo') {
+      fullName = 'Sarah Chen'
+      email = 'sarah.chen@demo.com'
+    } else if (id === 'marcus_johnson_demo') {
+      fullName = 'Marcus Johnson'
+      email = 'marcus.j@demo.com'
+    } else if (id === 'emily_rodriguez_demo') {
+      fullName = 'Emily Rodriguez'
+      email = 'emily.r@demo.com'
+    }
 
-  const mockUser = {
-    id: demoUserId,
-    email: 'rafi_vai@gmail.com',
-    user_metadata: {
-      full_name: 'Rafi (Judge)',
-      skills: [],
-    },
-    aud: 'authenticated',
-    role: 'authenticated',
+    return {
+      id,
+      email,
+      user_metadata: {
+        full_name: fullName,
+        skills: [],
+      },
+      aud: 'authenticated',
+      role: 'authenticated',
+    }
   }
 
   // Override auth methods
   const authOverride = {
     ...client.auth,
     getUser: async () => {
-      if (isDemoActive()) {
+      const mockUser = getMockUser()
+      if (mockUser) {
         return { data: { user: mockUser }, error: null }
       }
       return client.auth.getUser()
     },
     getSession: async () => {
-      if (isDemoActive()) {
+      const mockUser = getMockUser()
+      if (mockUser) {
         return {
           data: {
             session: {
@@ -52,7 +68,8 @@ export function createClient() {
       return client.auth.getSession()
     },
     onAuthStateChange: (callback: any) => {
-      if (isDemoActive()) {
+      const mockUser = getMockUser()
+      if (mockUser) {
         setTimeout(() => {
           callback('SIGNED_IN', {
             user: mockUser,
@@ -73,9 +90,17 @@ export function createClient() {
       return client.auth.onAuthStateChange(callback)
     },
     signInWithPassword: async (credentials: any) => {
+      const demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
       if (typeof window !== 'undefined') {
         localStorage.setItem('demo_user_id', demoUserId)
         document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
+      }
+      const mockUser = getMockUser() || {
+        id: demoUserId,
+        email: 'rafi_vai@gmail.com',
+        user_metadata: { full_name: 'Rafi (Judge)', skills: [] },
+        aud: 'authenticated',
+        role: 'authenticated'
       }
       return {
         data: {
@@ -92,9 +117,17 @@ export function createClient() {
       }
     },
     signUp: async (credentials: any) => {
+      const demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
       if (typeof window !== 'undefined') {
         localStorage.setItem('demo_user_id', demoUserId)
         document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
+      }
+      const mockUser = getMockUser() || {
+        id: demoUserId,
+        email: 'rafi_vai@gmail.com',
+        user_metadata: { full_name: 'Rafi (Judge)', skills: [] },
+        aud: 'authenticated',
+        role: 'authenticated'
       }
       return {
         data: {
@@ -118,7 +151,8 @@ export function createClient() {
       return { error: null }
     },
     updateUser: async (attributes: any) => {
-      if (isDemoActive()) {
+      const mockUser = getMockUser()
+      if (mockUser) {
         if (attributes.data) {
           Object.assign(mockUser.user_metadata, attributes.data)
         }

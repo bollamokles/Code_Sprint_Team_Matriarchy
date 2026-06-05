@@ -52,16 +52,20 @@ export default function LoginPage() {
     setError(null)
     setIsLoading(true)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    let demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
+    
+    // Map input email to corresponding local demo user IDs
+    if (email === 'sarah.chen@demo.com') {
+      demoUserId = 'sarah_chen_demo'
+    } else if (email === 'marcus.j@demo.com') {
+      demoUserId = 'marcus_johnson_demo'
+    } else if (email === 'emily.r@demo.com') {
+      demoUserId = 'emily_rodriguez_demo'
+    }
 
-    if (error) {
-      setError(error.message)
-      setIsLoading(false)
-      return
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_user_id', demoUserId)
+      document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
     }
 
     router.push('/dashboard')
@@ -74,33 +78,18 @@ export default function LoginPage() {
     setError(null)
     setIsLoading(true)
 
-    const supabase = createClient()
-    
-    // First, try to login
-    let { error } = await supabase.auth.signInWithPassword({
-      email: demoEmail,
-      password: demoPassword,
-    })
-
-    // If login failed, try to seed demo accounts and retry
-    if (error) {
-      try {
-        await fetch('/api/seed-demo', { method: 'POST' })
-        // Retry login after seeding
-        const retryResult = await supabase.auth.signInWithPassword({
-          email: demoEmail,
-          password: demoPassword,
-        })
-        error = retryResult.error
-      } catch {
-        // Seeding failed, continue with original error
-      }
+    let demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
+    if (demoEmail === 'sarah.chen@demo.com') {
+      demoUserId = 'sarah_chen_demo'
+    } else if (demoEmail === 'marcus.j@demo.com') {
+      demoUserId = 'marcus_johnson_demo'
+    } else if (demoEmail === 'emily.r@demo.com') {
+      demoUserId = 'emily_rodriguez_demo'
     }
 
-    if (error) {
-      setError('Demo account login failed. Please try again or register a new account.')
-      setIsLoading(false)
-      return
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_user_id', demoUserId)
+      document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
     }
 
     router.push('/dashboard')
