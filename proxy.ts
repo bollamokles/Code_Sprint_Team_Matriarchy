@@ -4,6 +4,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 const PUBLIC_PATHS = ['/', '/login', '/register']
 
 export async function proxy(request: NextRequest) {
+  // Allow demo users with active session cookie to bypass redirect
+  if (request.cookies.get('demo_user_id')) {
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
