@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,7 +10,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Compass, Loader2, Mail, Lock, AlertCircle, Sparkles, Target, TrendingUp, Users } from 'lucide-react'
 
-// Demo accounts for testing
 const DEMO_ACCOUNTS = [
   { name: 'Rafi (Judge)', email: 'rafi_vai@gmail.com', password: '123', role: 'Demo account' },
   { name: 'Sarah Chen', email: 'sarah.chen@demo.com', password: 'demo123', role: 'Software Engineer' },
@@ -19,103 +17,50 @@ const DEMO_ACCOUNTS = [
   { name: 'Emily Rodriguez', email: 'emily.r@demo.com', password: 'demo123', role: 'UX Designer' },
 ]
 
-import { useEffect } from 'react'
-
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showDemoAccounts, setShowDemoAccounts] = useState(false)
-  const [isAutoRedirecting, setIsAutoRedirecting] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const isLoggedOut = params.get('logout') === 'true'
+  const getDemoUserId = (email: string) => {
+    if (email === 'sarah.chen@demo.com') return 'sarah_chen_demo'
+    if (email === 'marcus.j@demo.com') return 'marcus_johnson_demo'
+    if (email === 'emily.r@demo.com') return 'emily_rodriguez_demo'
+    return process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
+  }
 
-      if (!isLoggedOut) {
-        const demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
-        localStorage.setItem('demo_user_id', demoUserId)
-        document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
-        window.location.href = '/dashboard'
-      } else {
-        setIsAutoRedirecting(false)
-      }
-    }
-  }, [router])
+  const setUserAndRedirect = (userId: string) => {
+    localStorage.setItem('demo_user_id', userId)
+    document.cookie = `demo_user_id=${userId}; path=/; max-age=31536000`
+    window.location.href = '/dashboard'
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
     setIsLoading(true)
-
-    let demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
-    
-    // Map input email to corresponding local demo user IDs
-    if (email === 'sarah.chen@demo.com') {
-      demoUserId = 'sarah_chen_demo'
-    } else if (email === 'marcus.j@demo.com') {
-      demoUserId = 'marcus_johnson_demo'
-    } else if (email === 'emily.r@demo.com') {
-      demoUserId = 'emily_rodriguez_demo'
-    }
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('demo_user_id', demoUserId)
-      document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
-    }
-
-    window.location.href = '/dashboard'
-  }
-
-  const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail)
-    setPassword(demoPassword)
     setError(null)
+    const userId = getDemoUserId(email)
+    setUserAndRedirect(userId)
+  }
+
+  const handleDemoLogin = (demoEmail: string) => {
     setIsLoading(true)
-
-    let demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
-    if (demoEmail === 'sarah.chen@demo.com') {
-      demoUserId = 'sarah_chen_demo'
-    } else if (demoEmail === 'marcus.j@demo.com') {
-      demoUserId = 'marcus_johnson_demo'
-    } else if (demoEmail === 'emily.r@demo.com') {
-      demoUserId = 'emily_rodriguez_demo'
-    }
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('demo_user_id', demoUserId)
-      document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
-    }
-
-    window.location.href = '/dashboard'
+    const userId = getDemoUserId(demoEmail)
+    setUserAndRedirect(userId)
   }
-
-  if (isAutoRedirecting) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground font-medium animate-pulse">
-          Preparing your demo session...
-        </p>
-      </div>
-    )
-  }
-
 
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar text-sidebar-foreground flex-col justify-between p-12 relative overflow-hidden">
-        {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-20 left-10 w-72 h-72 bg-sidebar-primary rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent rounded-full blur-3xl" />
         </div>
 
-        {/* Logo */}
         <div className="relative flex items-center gap-3">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-sidebar-primary shadow-lg shadow-sidebar-primary/25">
             <Compass className="w-7 h-7 text-sidebar-primary-foreground" />
@@ -126,7 +71,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="relative space-y-8">
           <div>
             <h2 className="text-4xl font-bold leading-tight text-balance">
@@ -137,7 +81,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Features */}
           <div className="space-y-4">
             <div className="flex items-start gap-4 p-4 rounded-xl bg-sidebar-accent/50">
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-sidebar-primary/20">
@@ -169,7 +112,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="relative">
           <p className="text-sm text-sidebar-foreground/40">
             Trusted by thousands of job seekers worldwide
@@ -180,7 +122,6 @@ export default function LoginPage() {
       {/* Right Panel - Login Form */}
       <div className="flex-1 flex items-center justify-center p-6 bg-background">
         <div className="w-full max-w-md">
-          {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
             <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary shadow-lg shadow-primary/25">
               <Compass className="w-7 h-7 text-primary-foreground" />
@@ -242,8 +183,8 @@ export default function LoginPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-4 pt-2">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full h-11 font-semibold shadow-lg shadow-primary/25"
                   disabled={isLoading}
                 >
@@ -257,7 +198,6 @@ export default function LoginPage() {
                   )}
                 </Button>
 
-                {/* Demo Accounts Section */}
                 <div className="w-full">
                   <button
                     type="button"
@@ -267,7 +207,7 @@ export default function LoginPage() {
                     <Users className="w-4 h-4" />
                     {showDemoAccounts ? 'Hide' : 'Show'} Demo Accounts
                   </button>
-                  
+
                   {showDemoAccounts && (
                     <div className="mt-3 space-y-2 p-3 rounded-lg bg-muted/50 border border-border/50">
                       <p className="text-xs text-muted-foreground text-center mb-2">
@@ -277,7 +217,7 @@ export default function LoginPage() {
                         <button
                           key={account.email}
                           type="button"
-                          onClick={() => handleDemoLogin(account.email, account.password)}
+                          onClick={() => handleDemoLogin(account.email)}
                           disabled={isLoading}
                           className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-background transition-colors text-left disabled:opacity-50"
                         >
@@ -291,7 +231,7 @@ export default function LoginPage() {
                         </button>
                       ))}
                       <p className="text-xs text-muted-foreground text-center pt-2 border-t border-border/50">
-                        Password for all: <code className="px-1 py-0.5 rounded bg-background text-primary">demo123</code>
+                        Click any account to instantly log in
                       </p>
                     </div>
                   )}
