@@ -1,5 +1,5 @@
 import { supabaseAdmin } from './supabase'
-import { embedText } from './embeddings'
+import { computeCosineSimilarity } from './embeddings'
 
 export type CVChunkMatch = {
   id: string
@@ -13,17 +13,37 @@ export async function queryCV(
   question: string,
   matchCount = 5
 ): Promise<CVChunkMatch[]> {
-  const queryEmbedding = await embedText(question)
+  const { data: chunks, error } = await supabaseAdmin
+    .from('cv_chunks')
+    .select('id, content, section')
+    .eq('user_id', userId)
 
-  const { data, error } = await supabaseAdmin.rpc('match_cv_chunks', {
-    query_embedding: queryEmbedding,
-    match_user_id: userId,
-    match_count: matchCount,
+  if (error) {
+    console.error('Error fetching CV chunks from database:', error)
+    return []
+  }
+
+  if (!chunks || chunks.length === 0) {
+    return []
+  }
+
+  // Calculate local TF-IDF cosine similarity
+  const matches: CVChunkMatch[] = chunks.map((chunk) => {
+    const similarity = computeCosineSimilarity(question, chunk.content)
+    return {
+      id: chunk.id,
+      content: chunk.content,
+      section: chunk.section,
+      similarity,
+    }
   })
 
-  if (error) throw error
-  return (data ?? []) as CVChunkMatch[]
+  // Sort descending and return top matches
+  return matches
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, matchCount)
 }
+
 
 export function formatCVContext(chunks: CVChunkMatch[]): string {
   if (chunks.length === 0) {

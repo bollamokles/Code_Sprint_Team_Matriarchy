@@ -39,8 +39,7 @@ export default function LoginPage() {
         const demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
         localStorage.setItem('demo_user_id', demoUserId)
         document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
-        router.push('/dashboard')
-        router.refresh()
+        window.location.href = '/dashboard'
       } else {
         setIsAutoRedirecting(false)
       }
@@ -68,8 +67,7 @@ export default function LoginPage() {
       document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    window.location.href = '/dashboard'
   }
 
   const handleDemoLogin = async (demoEmail: string, demoPassword: string) => {
@@ -92,8 +90,7 @@ export default function LoginPage() {
       document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    window.location.href = '/dashboard'
   }
 
   if (isAutoRedirecting) {
