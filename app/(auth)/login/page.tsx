@@ -19,13 +19,33 @@ const DEMO_ACCOUNTS = [
   { name: 'Emily Rodriguez', email: 'emily.r@demo.com', password: 'demo123', role: 'UX Designer' },
 ]
 
+import { useEffect } from 'react'
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showDemoAccounts, setShowDemoAccounts] = useState(false)
+  const [isAutoRedirecting, setIsAutoRedirecting] = useState(true)
   const router = useRouter()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const isLoggedOut = params.get('logout') === 'true'
+
+      if (!isLoggedOut) {
+        const demoUserId = process.env.NEXT_PUBLIC_DEMO_USER_ID || 'Rafi_vai_shera'
+        localStorage.setItem('demo_user_id', demoUserId)
+        document.cookie = `demo_user_id=${demoUserId}; path=/; max-age=31536000`
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        setIsAutoRedirecting(false)
+      }
+    }
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,6 +106,18 @@ export default function LoginPage() {
     router.push('/dashboard')
     router.refresh()
   }
+
+  if (isAutoRedirecting) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-sm text-muted-foreground font-medium animate-pulse">
+          Preparing your demo session...
+        </p>
+      </div>
+    )
+  }
+
 
   return (
     <div className="min-h-screen flex">
