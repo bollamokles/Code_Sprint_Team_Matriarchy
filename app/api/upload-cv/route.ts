@@ -47,11 +47,11 @@ function formatPgvectorDimensionMismatch(message: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireAuthUserId()
-  if ('response' in auth) return auth.response
-  const { userId } = auth
-
   try {
+    const auth = await requireAuthUserId()
+    if ('response' in auth) return auth.response
+    const { userId } = auth
+
     const startedAt = Date.now()
     const formData = await req.formData()
     const file = formData.get('file') as File | null
@@ -163,15 +163,13 @@ Ready score must be a number between 1.0 and 10.0.`
     return NextResponse.json({
       success: true,
       chunks: chunks.length,
-      sections,
-      preview: rawText.slice(0, 300),
-      durationMs: Date.now() - startedAt,
       rating,
     })
-  } catch (err) {
+  } catch (err: any) {
     console.error('UPLOAD ERROR:', err)
     const formatted = formatError(err)
     const friendlyMismatch = formatPgvectorDimensionMismatch(formatted)
-    return NextResponse.json({ error: friendlyMismatch ?? formatted }, { status: 500 })
+    const message = friendlyMismatch ?? (err instanceof Error ? err.message : formatted)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
