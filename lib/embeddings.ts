@@ -81,59 +81,11 @@ export function generateTfidfVector(text: string): number[] {
 }
 
 export async function embedText(text: string): Promise<number[]> {
-  const skipOllama = !process.env.OLLAMA_BASE_URL || process.env.VERCEL
-  let ollamaReachable = false
-
-  if (!skipOllama) {
-    const ollamaUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
-    try {
-      const controller = new AbortController()
-      const id = setTimeout(() => controller.abort(), 1000) // 1s timeout
-      const res = await fetch(`${ollamaUrl}/api/tags`, {
-        signal: controller.signal,
-      })
-      clearTimeout(id)
-      if (res.ok) {
-        ollamaReachable = true
-      }
-    } catch (e) {
-      ollamaReachable = false
-    }
-
-    if (ollamaReachable) {
-      try {
-        console.log('Ollama is reachable, requesting embedding...')
-        const res = await fetch(`${ollamaUrl}/api/embeddings`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: process.env.OLLAMA_EMBED_MODEL || 'nomic-embed-text',
-            prompt: text,
-          }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.embedding && Array.isArray(data.embedding)) {
-            let vector = data.embedding
-            if (vector.length < 768) {
-              vector = [...vector, ...new Array(768 - vector.length).fill(0)]
-            } else if (vector.length > 768) {
-              vector = vector.slice(0, 768)
-            }
-            return vector
-          }
-        }
-      } catch (e) {
-        console.error('Ollama embedding request failed:', e)
-      }
-    }
-  }
-
-  // 2. If Ollama is not reachable or fails, check for Groq
+  // Check for Groq first, then fallback to TF-IDF
   const groqKey = process.env.GROQ_API_KEY
   if (groqKey && groqKey !== 'your_groq_key_here' && groqKey.trim() !== '') {
     try {
-      console.log('Ollama unreachable. Attempting Groq embedding call...')
+      console.log('Attempting Groq embedding call...')
       const openai = new OpenAI({
         apiKey: groqKey,
         baseURL: 'https://api.groq.com/openai/v1',
@@ -156,7 +108,7 @@ export async function embedText(text: string): Promise<number[]> {
     }
   }
 
-  // 3. Fallback to TF-IDF
+  // Fallback to TF-IDF
   console.log('Falling back to local TF-IDF embedding vector generation.')
   return generateTfidfVector(text)
 }

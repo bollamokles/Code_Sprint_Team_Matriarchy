@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { extractTextFromFile } from '@/lib/cv-parser'
 import { chunkCVBySection } from '@/lib/cv-chunker'
+import OpenAI from 'openai'
 
 function formatError(err: unknown): string {
   if (err instanceof Error) return err.message
@@ -22,20 +23,29 @@ function tfidfVector(text: string): number[] {
 }
 
 async function getEmbedding(text: string): Promise<number[]> {
-  const ollamaUrl = process.env.OLLAMA_BASE_URL
-  if (ollamaUrl && !process.env.VERCEL) {
+  const groqKey = process.env.GROQ_API_KEY
+  if (groqKey && groqKey !== 'your_groq_key_here' && groqKey.trim() !== '') {
     try {
-      const res = await fetch(`${ollamaUrl}/api/embeddings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: process.env.OLLAMA_EMBED_MODEL || 'nomic-embed-text', prompt: text }),
-        signal: AbortSignal.timeout(5000),
+      const openai = new OpenAI({
+        apiKey: groqKey,
+        baseURL: 'https://api.groq.com/openai/v1',
       })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.embedding?.length) return data.embedding
+      const response = await openai.embeddings.create({
+        model: 'nomic-embed-text',
+        input: text,
+      })
+      if (response.data?.[0]?.embedding) {
+        let vector = response.data[0].embedding
+        if (vector.length < 768) {
+          vector = [...vector, ...new Array(768 - vector.length).fill(0)]
+        } else if (vector.length > 768) {
+          vector = vector.slice(0, 768)
+        }
+        return vector
       }
-    } catch {}
+    } catch (error) {
+      console.error('Groq embedding API failed, falling back to TF-IDF:', error)
+    }
   }
   return tfidfVector(text)
 }
