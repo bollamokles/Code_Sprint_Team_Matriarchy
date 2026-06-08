@@ -1,5 +1,24 @@
+// Polyfill DOMMatrix for serverless environment (Vercel) to prevent pdf-parse crash
+if (typeof globalThis.DOMMatrix === 'undefined') {
+  // @ts-ignore
+  globalThis.DOMMatrix = class DOMMatrix {
+    a = 1; b = 0; c = 0; d = 1; e = 0; f = 0;
+    constructor(init?: any) {
+      if (init && Array.isArray(init)) {
+        this.a = init[0] ?? 1;
+        this.b = init[1] ?? 0;
+        this.c = init[2] ?? 0;
+        this.d = init[3] ?? 1;
+        this.e = init[4] ?? 0;
+        this.f = init[5] ?? 0;
+      }
+    }
+    static fromMatrix() { return new DOMMatrix(); }
+  };
+}
+
 import mammoth from 'mammoth'
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
+import pdfParse from 'pdf-parse'
 
 export async function extractTextFromFile(
   data: Uint8Array,
@@ -8,24 +27,9 @@ export async function extractTextFromFile(
   const lower = filename.toLowerCase()
 
   if (lower.endsWith('.pdf')) {
-    const loadingTask = pdfjsLib.getDocument({
-      data: data,
-      useSystemFonts: true,
-      disableFontFace: true,
-      verbosity: 0,
-    })
-    const pdf = await loadingTask.promise
-    let fullText = ''
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i)
-      const content = await page.getTextContent()
-      const pageText = content.items
-        .map((item: any) => item.str)
-        .join(' ')
-      fullText += pageText + '\n'
-    }
-    return fullText
+    const buffer = Buffer.from(data)
+    const result = await pdfParse(buffer)
+    return result.text
   }
 
   if (lower.endsWith('.docx')) {

@@ -9,30 +9,36 @@ function isTableMissing(message: string) {
 }
 
 export async function GET() {
-  const auth = await requireAuthUserId()
-  if ('response' in auth) return auth.response
-  const { userId } = auth
+  try {
+    const auth = await requireAuthUserId()
+    if ('response' in auth) return auth.response
+    const { userId } = auth
 
-  const { data, error } = await supabaseAdmin
-    .from('applications')
-    .select('id, user_id, job_title, company, status, applied_date, notes, job_url, salary, location')
-    .eq('user_id', userId)
-    .order('applied_date', { ascending: false })
+    const { data, error } = await supabaseAdmin
+      .from('applications')
+      .select('id, user_id, job_title, company, status, applied_date, notes, job_url, salary, location')
+      .eq('user_id', userId)
+      .order('applied_date', { ascending: false })
 
-  if (error) {
-    if (isTableMissing(error.message)) return NextResponse.json({ applications: [] })
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      if (isTableMissing(error.message)) return NextResponse.json({ applications: [] })
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ applications: data ?? [] })
+  } catch (err: any) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }
-
-  return NextResponse.json({ applications: data ?? [] })
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireAuthUserId()
-  if ('response' in auth) return auth.response
-  const { userId } = auth
-
   try {
+    const auth = await requireAuthUserId()
+    if ('response' in auth) {
+      return auth.response
+    }
+    const { userId } = auth
+
     const {
       job_title,
       company,
@@ -55,7 +61,7 @@ export async function POST(req: NextRequest) {
     const salaryNum = salary === '' || salary === null || salary === undefined ? null : Number(salary)
     const salaryValue = Number.isFinite(salaryNum as number) ? salaryNum : null
 
-    const { data, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('applications')
       .insert({
         user_id: userId,
@@ -68,22 +74,22 @@ export async function POST(req: NextRequest) {
         salary: salaryValue,
         location: location ? String(location) : null,
       })
-      .select()
-      .single()
 
-    if (error) throw error
-    return NextResponse.json({ application: data })
-  } catch (err) {
+    if (error) {
+      throw error
+    }
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }
 }
 
 export async function PATCH(req: NextRequest) {
-  const auth = await requireAuthUserId()
-  if ('response' in auth) return auth.response
-  const { userId } = auth
-
   try {
+    const auth = await requireAuthUserId()
+    if ('response' in auth) return auth.response
+    const { userId } = auth
+
     const { id, status } = await req.json()
 
     if (!id || !status) {
@@ -110,15 +116,19 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = await requireAuthUserId()
-  if ('response' in auth) return auth.response
-  const { userId } = auth
+  try {
+    const auth = await requireAuthUserId()
+    if ('response' in auth) return auth.response
+    const { userId } = auth
 
-  const id = req.nextUrl.searchParams.get('id')
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+    const id = req.nextUrl.searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
-  const { error } = await supabaseAdmin.from('applications').delete().eq('id', id).eq('user_id', userId)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true })
+    const { error } = await supabaseAdmin.from('applications').delete().eq('id', id).eq('user_id', userId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 })
+  }
 }
 

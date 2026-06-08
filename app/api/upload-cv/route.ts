@@ -47,9 +47,12 @@ function formatPgvectorDimensionMismatch(message: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  console.log('POST /api/upload-cv: started')
   try {
     const auth = await requireAuthUserId()
-    if ('response' in auth) return auth.response
+    if ('response' in auth) {
+      return auth.response
+    }
     const { userId } = auth
 
     const startedAt = Date.now()
@@ -162,6 +165,7 @@ Ready score must be a number between 1.0 and 10.0.`
 
     return NextResponse.json({
       success: true,
+      message: 'CV uploaded',
       chunks: chunks.length,
       rating,
     })

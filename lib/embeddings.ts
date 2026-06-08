@@ -81,48 +81,51 @@ export function generateTfidfVector(text: string): number[] {
 }
 
 export async function embedText(text: string): Promise<number[]> {
-  // 1. Check if Ollama is reachable
-  const ollamaUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
+  const skipOllama = !process.env.OLLAMA_BASE_URL || process.env.VERCEL
   let ollamaReachable = false
-  try {
-    const controller = new AbortController()
-    const id = setTimeout(() => controller.abort(), 1000) // 1s timeout
-    const res = await fetch(`${ollamaUrl}/api/tags`, {
-      signal: controller.signal,
-    })
-    clearTimeout(id)
-    if (res.ok) {
-      ollamaReachable = true
-    }
-  } catch (e) {
-    ollamaReachable = false
-  }
 
-  if (ollamaReachable) {
+  if (!skipOllama) {
+    const ollamaUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'
     try {
-      console.log('Ollama is reachable, requesting embedding...')
-      const res = await fetch(`${ollamaUrl}/api/embeddings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: process.env.OLLAMA_EMBED_MODEL || 'nomic-embed-text',
-          prompt: text,
-        }),
+      const controller = new AbortController()
+      const id = setTimeout(() => controller.abort(), 1000) // 1s timeout
+      const res = await fetch(`${ollamaUrl}/api/tags`, {
+        signal: controller.signal,
       })
+      clearTimeout(id)
       if (res.ok) {
-        const data = await res.json()
-        if (data.embedding && Array.isArray(data.embedding)) {
-          let vector = data.embedding
-          if (vector.length < 768) {
-            vector = [...vector, ...new Array(768 - vector.length).fill(0)]
-          } else if (vector.length > 768) {
-            vector = vector.slice(0, 768)
-          }
-          return vector
-        }
+        ollamaReachable = true
       }
     } catch (e) {
-      console.error('Ollama embedding request failed:', e)
+      ollamaReachable = false
+    }
+
+    if (ollamaReachable) {
+      try {
+        console.log('Ollama is reachable, requesting embedding...')
+        const res = await fetch(`${ollamaUrl}/api/embeddings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: process.env.OLLAMA_EMBED_MODEL || 'nomic-embed-text',
+            prompt: text,
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.embedding && Array.isArray(data.embedding)) {
+            let vector = data.embedding
+            if (vector.length < 768) {
+              vector = [...vector, ...new Array(768 - vector.length).fill(0)]
+            } else if (vector.length > 768) {
+              vector = vector.slice(0, 768)
+            }
+            return vector
+          }
+        }
+      } catch (e) {
+        console.error('Ollama embedding request failed:', e)
+      }
     }
   }
 
